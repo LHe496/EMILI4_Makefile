@@ -1,0 +1,11 @@
+--- multicheck4.f	2003-03-06 01:35:09.000000000 +0000
++++ multicheck4.f	2003-03-06 01:35:09.000000000 +0000
+@@ -194,7 +194,7 @@
+ c	      if (itr1.eq.1880803562) then 
+ c		 print *,'Yep'
+ c		 read(*,*)
+-d              end if
++c              end if
+               num1=num1-1
+ 	      go to 300
+            end if

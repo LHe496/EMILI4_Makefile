@@ -1,0 +1,79 @@
+name: EMILI build workflow
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    env:
+      FC: ${{ matrix.fc }}
+      FFLAGS: ${{ matrix.fflags }}
+    
+    strategy:
+      matrix:
+        include:
+          - name: Ubuntu latest x86_64
+            os: ubuntu-latest
+            fc: gfortran
+            fflags: -g -O2 -Wall
+            suffix: _linux_amd64
+
+          - name: Ubuntu latest i386
+            os: ubuntu-latest
+            fc: gfortran
+            fflags: -m32 -g -O2 -Wall
+            suffix: _linux_i386
+
+          - name: macOS Sequoia arm64
+            os: macos-15
+            fc: gfortran-14
+            fflags: -g -O2 -Wall
+            suffix: _darwin_arm64
+
+          - name: macOS Ventura x86_64
+            os: macos-13
+            fc: gfortran-14
+            fflags: -g -O2 -Wall
+            suffix: _darwin_amd64
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup dependencies on Ubuntu
+        if: matrix.name == 'Ubuntu latest i386'
+        run: |
+          sudo dpkg --add-architecture i386
+          sudo apt-get update -y
+          sudo apt-get install -y gcc-multilib gfortran-multilib
+
+      - name: Print system info
+        run: |
+          uname -m
+
+      - name: Get EMILI4 source and apply patch
+        run: |
+          curl -OL https://web.pa.msu.edu/astro/software/emili/em4.tar.gz
+          tar -xzf em4.tar.gz
+          patch < fix_comment.patch
+
+      - name: Compile EMILI4
+        run: |
+          make -j$(nproc) all
+          mkdir test
+          cp -p ic418.* test/
+
+      - name: Package EMILI4
+        uses: actions/upload-artifact@v4
+        with:
+          name: EMILI4${{ matrix.suffix }}
+          path: |
+            em4
+            emread
+            abun.dat
+            ion.dat
+            multi.dat
+            slev_list
+            sline_list
+            test
