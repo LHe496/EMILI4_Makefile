@@ -8,6 +8,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       FC: ${{ matrix.fc }}
+      STRIP: ${{ matrix.strip }}
       FFLAGS: ${{ matrix.fflags }}
     
     strategy:
@@ -16,24 +17,52 @@ jobs:
           - name: Ubuntu latest x86_64
             os: ubuntu-latest
             fc: gfortran
+            strip: strip
             fflags: -g -O2 -Wall
             suffix: _linux_amd64
 
           - name: Ubuntu latest i386
             os: ubuntu-latest
             fc: gfortran
+            strip: strip
             fflags: -m32 -g -O2 -Wall
             suffix: _linux_i386
+
+          - name: Ubuntu latest aarch64 cross
+            os: ubuntu-latest
+            cross: aarch64-linux-gnu
+            fc: aarch64-linux-gnu-gfortran
+            strip: aarch64-linux-gnu-strip
+            fflags: -g -O2 -Wall
+            suffix: _linux_aarch64
+
+          - name: Ubuntu latest armel cross
+            os: ubuntu-latest
+            cross: arm-linux-gnueabi
+            fc: arm-linux-gnueabi-gfortran
+            strip: arm-linux-gnueabi-strip
+            fflags: -g -O2 -Wall
+            suffix: _linux_armel
+
+          - name: Ubuntu latest armhf cross
+            os: ubuntu-latest
+            cross: arm-linux-gnueabihf
+            fc: arm-linux-gnueabihf-gfortran
+            strip: arm-linux-gnueabihf-strip
+            fflags: -g -O2 -Wall
+            suffix: _linux_armhf
 
           - name: macOS Sequoia arm64
             os: macos-15
             fc: gfortran-14
+            strip: strip
             fflags: -g -O2 -Wall
             suffix: _darwin_arm64
 
           - name: macOS Ventura x86_64
             os: macos-13
             fc: gfortran-14
+            strip: strip
             fflags: -g -O2 -Wall
             suffix: _darwin_amd64
 
@@ -41,13 +70,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup dependencies on Ubuntu
+      - name: Setup dependencies on Ubuntu i386
         if: matrix.name == 'Ubuntu latest i386'
         run: |
           sudo dpkg --add-architecture i386
           sudo apt-get update -y
           sudo apt-get install -y gcc-multilib gfortran-multilib
 
+      - name: Setup dependencies on Ubuntu for cross-compiling
+        if: contains(matrix.name, 'cross')
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y gcc-${{ matrix.cross }} gfortran-${{ matrix.cross }}
+        
       - name: Print system info
         run: |
           uname -m
